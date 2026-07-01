@@ -1,56 +1,43 @@
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph, START, END
 from core.state import ErrandState
 from agents.parser import parser_agent
-from agents.enrichment import enrichment_agent
-from agents.reasoner import reasoner_agent
-from agents.optimizer import optimizer_agent
-from agents.explainer import explainer_agent
-from agents.evaluator import evaluator_agent
-
-def should_retry(state: ErrandState):
-    flags = state.get("eval_flags", [])
-    retry_count = state.get("retry_count", 0)
-    
-    if flags and retry_count < 2:
-        # If there are flags and we haven't maxed out retries, loop back to optimizer
-        return "optimizer"
-    
-    # Otherwise finish
-    return END
-
-def increment_retry(state: ErrandState):
-    return {"retry_count": state.get("retry_count", 0) + 1}
+from agents.memory_agent import memory_agent
+from agents.geo_clustering import geo_clustering_agent
+from agents.temporal_constraint import temporal_constraint_agent
+from agents.dependency import dependency_agent
+from agents.orchestrator import orchestrator_agent
 
 def build_graph():
     """
-    Constructs the LangGraph supervisor workflow.
+    Constructs the Agent Society negotiation graph using LangGraph.
     """
     workflow = StateGraph(ErrandState)
     
-    # Add nodes
+    # Add nodes for each agent
     workflow.add_node("parser", parser_agent)
-    workflow.add_node("enrichment", enrichment_agent)
-    workflow.add_node("reasoner", reasoner_agent)
-    workflow.add_node("optimizer", optimizer_agent)
-    workflow.add_node("explainer", explainer_agent)
-    workflow.add_node("evaluator", evaluator_agent)
+    workflow.add_node("memory", memory_agent)
+    workflow.add_node("geo", geo_clustering_agent)
+    workflow.add_node("temporal", temporal_constraint_agent)
+    workflow.add_node("dependency", dependency_agent)
+    workflow.add_node("orchestrator", orchestrator_agent)
     
-    # Define edges
-    workflow.set_entry_point("parser")
-    workflow.add_edge("parser", "enrichment")
-    workflow.add_edge("enrichment", "reasoner")
-    workflow.add_edge("reasoner", "optimizer")
-    workflow.add_edge("optimizer", "explainer")
-    workflow.add_edge("explainer", "evaluator")
+    # Define the flow
+    # 1. Parse the input
+    workflow.add_edge(START, "parser")
     
-    # Conditional edge for evaluation retry loop
-    workflow.add_conditional_edges(
-        "evaluator",
-        should_retry,
-        {
-            "optimizer": "optimizer", # Loop back to fix issues
-            END: END # Finish
-        }
-    )
+    # 2. Extract memory context
+    workflow.add_edge("parser", "memory")
+    
+    # 3. Parallel dispatch to specialist agents
+    workflow.add_edge("memory", "geo")
+    workflow.add_edge("memory", "temporal")
+    workflow.add_edge("memory", "dependency")
+    
+    # 4. Gather proposals at Orchestrator
+    workflow.add_edge("geo", "orchestrator")
+    workflow.add_edge("temporal", "orchestrator")
+    workflow.add_edge("dependency", "orchestrator")
+    
+    workflow.add_edge("orchestrator", END)
     
     return workflow.compile()
