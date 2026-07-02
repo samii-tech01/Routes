@@ -1,0 +1,8 @@
+langgraph
+python-dotenv
+googlemaps
+pydantic
+typing-extensions
+dashscope
+langchain-community
+langchain-openai
