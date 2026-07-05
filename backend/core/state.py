@@ -13,6 +13,8 @@ class Errand(BaseModel):
     
     # Enriched by Geo-Clustering Agent
     resolved_location: Optional[str] = Field(None, description="Resolved address or coordinates")
+    lat: Optional[float] = Field(None, description="Latitude of the location")
+    lng: Optional[float] = Field(None, description="Longitude of the location")
     estimated_duration_mins: Optional[int] = Field(None, description="Estimated time spent at the location")
     
     # Enriched by Temporal-Constraint Agent
@@ -25,7 +27,7 @@ class Errand(BaseModel):
 class AgentProposal(BaseModel):
     agent_name: str
     proposed_sequence: List[str]
-    score_penalty: int = 0
+    score_penalty: float = 0.0
     rationale: str
 
 def merge_proposals(a: List[AgentProposal], b: List[AgentProposal]) -> List[AgentProposal]:
@@ -37,8 +39,15 @@ class ErrandState(TypedDict):
     Represents the session memory for the LangGraph pipeline in the Agent Society.
     """
     user_input: str
-    user_location: str
+    user_location: str          # Full address of user's current position
+    user_city: str              # Extracted city name (e.g. "Khairpur")
+    user_lat: Optional[float]   # Exact starting latitude
+    user_lng: Optional[float]   # Exact starting longitude
+    user_city_lat: Optional[float]  # City center lat — used to bias all geocoding
+    user_city_lng: Optional[float]  # City center lng — used to bias all geocoding
+    user_city_bbox: Optional[list]  # Bounding box for hard restriction
     errands: List[Errand]
+    drive_matrix: Optional[Dict[str, Dict[str, int]]]  # e.g., {"START": {"e1": 15}, "e1": {"e2": 10}}
     
     # Populated asynchronously by specialist agents
     proposals: Annotated[List[AgentProposal], merge_proposals]

@@ -6,7 +6,7 @@ from langchain_openai import ChatOpenAI
 load_dotenv()
 
 GMI_API_KEY = os.getenv("GMI_API_KEY")
-GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
+ORS_API_KEY = os.getenv("ORS_API_KEY")
 
 def get_orchestrator_llm():
     """
@@ -39,5 +39,5 @@ def get_specialist_llm():
 def validate_config():
     if not GMI_API_KEY:
         print("Warning: No GMI API key set. System will fail.")
-    if not GOOGLE_MAPS_API_KEY:
-        print("Warning: GOOGLE_MAPS_API_KEY is not set. MCP will need to mock data.")
+    if not ORS_API_KEY:
+        print("Warning: ORS_API_KEY is not set. Maps will use Nominatim fallback.")

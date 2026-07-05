@@ -29,8 +29,9 @@ def get_user_preference(user_id: str, errand_type: str) -> str:
         data = response.data
         if data and len(data) > 0:
             return data[0]["preferred_location"]
-    except Exception as e:
-        print(f"[Supabase MCP] Failed to get preference for {errand_type}: {e}")
+    except Exception:
+        # Silently fail on network/database issues for graceful degradation
+        pass
     return None
 
 def set_user_preference(user_id: str, errand_type: str, preferred_location: str):
@@ -46,5 +47,7 @@ def set_user_preference(user_id: str, errand_type: str, preferred_location: str)
         }
         # Upsert requires a unique constraint on (user_id, errand_type)
         client.table("user_preferences").upsert(data).execute()
-    except Exception as e:
-        print(f"[Supabase MCP] Failed to set preference for {errand_type}: {e}")
+    except Exception:
+        # Silently fail on network/database issues for graceful degradation
+        pass
+

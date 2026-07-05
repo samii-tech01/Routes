@@ -1,4 +1,5 @@
 from langgraph.graph import StateGraph, START, END
+from langgraph.checkpoint.memory import MemorySaver
 from core.state import ErrandState
 from agents.parser import parser_agent
 from agents.memory_agent import memory_agent
@@ -28,16 +29,18 @@ def build_graph():
     # 2. Extract memory context
     workflow.add_edge("parser", "memory")
     
-    # 3. Parallel dispatch to specialist agents
+    # 3. Geo must run first to populate matrix
     workflow.add_edge("memory", "geo")
-    workflow.add_edge("memory", "temporal")
-    workflow.add_edge("memory", "dependency")
     
-    # 4. Gather proposals at Orchestrator
-    workflow.add_edge("geo", "orchestrator")
+    # 4. Temporal and Dependency run after Geo
+    workflow.add_edge("geo", "temporal")
+    workflow.add_edge("geo", "dependency")
+    
+    # 5. Gather proposals at Orchestrator
     workflow.add_edge("temporal", "orchestrator")
     workflow.add_edge("dependency", "orchestrator")
     
     workflow.add_edge("orchestrator", END)
     
-    return workflow.compile()
+    memory = MemorySaver()
+    return workflow.compile(checkpointer=memory)
